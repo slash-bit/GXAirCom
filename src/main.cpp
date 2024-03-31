@@ -41,7 +41,7 @@ XPowersLibInterface *PMU = NULL;
 
 // #define GXTEST
 // #define FLARMTEST
-
+#define SerialMon Serial
 #define TINY_GSM_RX_BUFFER 1024
 
 #define WDT_TIMEOUT 15
@@ -4348,14 +4348,14 @@ void readGPS()
 #endif
       char *cstr = new char[sNmeaIn.length() + 1];
       strcpy(cstr, sNmeaIn.c_str());
-      // log_i("process GPS-String:%s",cstr);
+      log_i("process GPS-String:%s", cstr);
       uint16_t i = 0;
-      // char c;
-      // Serial.println();
-      // Serial.print("s=");
+      char c;
+      Serial.println();
+      Serial.print("s=");
       while (true)
       {
-        // Serial.print(cstr[i]);
+        Serial.print(cstr[i]);
         nmea.process(cstr[i]);
         if (cstr[i] == 0)
         {
