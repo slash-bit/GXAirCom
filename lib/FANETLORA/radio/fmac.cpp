@@ -250,7 +250,7 @@ uint8_t FanetMac::getAddressType(uint8_t manuId){
 
 void FanetMac::sendUdpData(const uint8_t *buffer,int len){
 	if ((WiFi.status() == WL_CONNECTED) || (WiFi.softAPgetStationNum() > 0)){ //connected to wifi or a client is connected to me
-		//log_i("sending udp");
+		log_i("sending udp");
 		WiFiUDP udp;
 		udp.beginPacket("192.168.0.178",10110);
 		udp.write(buffer,len);

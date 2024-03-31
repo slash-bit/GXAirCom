@@ -18,17 +18,14 @@
 extern volatile uint32_t gtPPS;
 extern volatile uint32_t gtReceived;
 
-
 /* Debug */
-#define MAC_debug_mode				0
-//#define MAC_debug_mode				100
-#define RX_DEBUG 0
-#define TX_DEBUG 0
-//#define FREQUENCYTEST
+#define MAC_debug_mode 0
+// #define MAC_debug_mode				100
+#define RX_DEBUG 1
+#define TX_DEBUG 1
+// #define FREQUENCYTEST
 
-
-
-//define the pins used by the LoRa transceiver module
+// define the pins used by the LoRa transceiver module
 #define SCK 5
 #define MISO 19
 #define MOSI 27
@@ -36,14 +33,12 @@ extern volatile uint32_t gtReceived;
 #define RST 23
 #define DIO0 26
 
-//#define FREQUENCY868 868200012
+// #define FREQUENCY868 868200012
 #define FREQUENCY868 868200000
 #define FREQUENCY915 916039978
 
-//#define ManuId 0x07 // for the moment we use soft-Rf, cause then airwhere is showing it on the map
-#define ManuId 0x08 //08 ... GxAircom
-
-
+// #define ManuId 0x07 // for the moment we use soft-Rf, cause then airwhere is showing it on the map
+#define ManuId 0x08 // 08 ... GxAircom
 
 /*
  * Hard coded tx time assumption:
@@ -70,34 +65,34 @@ extern volatile uint32_t gtReceived;
  * ONLY change if you know what you are doing. Can destroy the hole nearby network!
  */
 
-#define MAC_SLOT_MS				20
+#define MAC_SLOT_MS 20
 
-#define MAC_TX_MINPREAMBLEHEADERTIME_MS		15
-#define MAC_TX_TIMEPERBYTE_MS			2
-#define MAC_TX_ACKTIMEOUT			1000
-#define MAC_TX_RETRANSMISSION_TIME		1000
-#define MAC_TX_RETRANSMISSION_RETRYS		3
-#define MAC_TX_BACKOFF_EXP_MIN			7
-#define MAC_TX_BACKOFF_EXP_MAX			12
+#define MAC_TX_MINPREAMBLEHEADERTIME_MS 15
+#define MAC_TX_TIMEPERBYTE_MS 2
+#define MAC_TX_ACKTIMEOUT 1000
+#define MAC_TX_RETRANSMISSION_TIME 1000
+#define MAC_TX_RETRANSMISSION_RETRYS 3
+#define MAC_TX_BACKOFF_EXP_MIN 7
+#define MAC_TX_BACKOFF_EXP_MAX 12
 
-#define MAC_FORWARD_MAX_RSSI_DBM		-90		//todo test
-#define MAC_FORWARD_MIN_DB_BOOST		20
-#define MAC_FORWARD_DELAY_MIN			100
-#define MAC_FORWARD_DELAY_MAX			300
+#define MAC_FORWARD_MAX_RSSI_DBM -90 // todo test
+#define MAC_FORWARD_MIN_DB_BOOST 20
+#define MAC_FORWARD_DELAY_MIN 100
+#define MAC_FORWARD_DELAY_MAX 300
 
-#define NEIGHBOR_MAX_TIMEOUT_MS			250000		//4min + 10sek
+#define NEIGHBOR_MAX_TIMEOUT_MS 250000 // 4min + 10sek
 
-#define MAC_SYNCWORD				0xF1
+#define MAC_SYNCWORD 0xF1
 
 /*
  * Number defines
  */
-#define MAC_NEIGHBOR_SIZE			64
-#define MAC_MAXNEIGHBORS_4_TRACKING_2HOP	5
-#define MAC_CODING48_THRESHOLD			8
+#define MAC_NEIGHBOR_SIZE 64
+#define MAC_MAXNEIGHBORS_4_TRACKING_2HOP 5
+#define MAC_CODING48_THRESHOLD 8
 
-#define MAC_FIFO_SIZE				8
-#define MAC_FRAME_LENGTH			254
+#define MAC_FIFO_SIZE 8
+#define MAC_FRAME_LENGTH 254
 
 #define ADDRESSTYPE_RANDOM 0
 #define ADDRESSTYPE_ICAO 1
@@ -105,11 +100,11 @@ extern volatile uint32_t gtReceived;
 #define ADDRESSTYPE_OGN 3
 
 // SEND FRAME RETURN VALUES
-#define	TX_OK						0
-#define	TX_TX_ONGOING					-1
-#define	TX_RX_ONGOING					-2
-#define	TX_FSK_ONGOING					-3
-#define TX_ERROR					-100
+#define TX_OK 0
+#define TX_TX_ONGOING -1
+#define TX_RX_ONGOING -2
+#define TX_FSK_ONGOING -3
+#define TX_ERROR -100
 
 #define LORA_TIME 5000
 #define FSK_TIME 2000
@@ -122,18 +117,17 @@ extern volatile uint32_t gtReceived;
 #define LEGACY_8684_BEGIN		850
 #define LEGACY_8684_END			1200
 */
-#define LEGACY_8682_BEGIN		480
-#define LEGACY_8682_END			820
-#define LEGACY_8684_BEGIN		870	
-#define LEGACY_8684_END			1230
+#define LEGACY_8682_BEGIN 480
+#define LEGACY_8682_END 820
+#define LEGACY_8684_BEGIN 870
+#define LEGACY_8684_END 1230
 
 #define MODE_LORA 1
 #define MODE_FSK_8682 2
 #define MODE_FSK_8684 3
 #define MODE_FSK 4
 
-
-//#include "main.h"
+// #include "main.h"
 #include "lib/LinkedList2.h"
 #include "lib/TimerObject.h"
 
@@ -145,6 +139,7 @@ class NeighborNode
 {
 private:
 	unsigned long last_seen;
+
 public:
 	const MacAddr addr;
 	bool hasTracking;
@@ -157,15 +152,14 @@ public:
 class Fapp
 {
 public:
-	Fapp() { }
-	virtual ~Fapp() { }
+	Fapp() {}
+	virtual ~Fapp() {}
 
 	/* device -> air */
 	virtual bool is_broadcast_ready(int num_neighbors) = 0;
 	virtual void broadcast_successful(int type) = 0;
 	virtual Frame *get_frame() = 0;
 	virtual bool createLegacy(uint8_t *buffer);
-	
 
 	/* air -> device */
 	virtual void handle_acked(bool ack, MacAddr &addr) = 0;
@@ -175,12 +169,13 @@ public:
 class MacFifo
 {
 private:
-	LinkedList2<Frame*> fifo;
+	LinkedList2<Frame *> fifo;
+
 public:
 	/* not usable in async mode */
-	Frame* get_nexttx();
-	Frame* frame_in_list(Frame *frm);
-	Frame* front();
+	Frame *get_nexttx();
+	Frame *frame_in_list(Frame *frm);
+	Frame *front();
 
 	/* usable in async mode */
 	bool remove_delete_acked_frame(MacAddr dest);
@@ -193,25 +188,26 @@ class FanetMac
 {
 private:
 	/* lora region */
-	enum eLoraRegion {
-			NONE = 0,
-			US920 = 1,
-			AU920 = 2,
-			IN866 = 3,
-			KR923 = 4,
-			AS920 = 5,
-			IL918 = 6,
-			EU868 = 7
+	enum eLoraRegion
+	{
+		NONE = 0,
+		US920 = 1,
+		AU920 = 2,
+		IN866 = 3,
+		KR923 = 4,
+		AS920 = 5,
+		IL918 = 6,
+		EU868 = 7
 	};
 
 	struct rfModeBits
 	{
-			unsigned FntRx:1, FntTx:1, LegRx:1, LegTx:1, b4:1, b5:1, b6:1, b7:1;
+		unsigned FntRx : 1, FntTx : 1, LegRx : 1, LegTx : 1, b4 : 1, b5 : 1, b6 : 1, b7 : 1;
 	};
 	union uRfMode
 	{
-			rfModeBits bits;
-			uint8_t mode;
+		rfModeBits bits;
+		uint8_t mode;
 	};
 	TimerObject myTimer;
 	MacFifo tx_fifo;
@@ -226,35 +222,35 @@ private:
 	unsigned long csma_next_tx = 0;
 	int csma_backoff_exp = MAC_TX_BACKOFF_EXP_MIN;
 	long setup_frequency;
-	
+
 	/* used for interrupt handler */
 	uint8_t rx_frame[MAC_FRAME_LENGTH];
-	int num_received = 0;	
+	int num_received = 0;
 
 	static void frameRxWrapper(int length);
 	void frameReceived(int length);
 
-	void ack(Frame* frm);
+	void ack(Frame *frm);
 
 	static void stateWrapper();
-	//static void setFlag(void);
+	// static void setFlag(void);
 	void handleIRQ();
 	void handleTx();
 	void handleTxLegacy();
 	void handleRx();
-	void switchMode(uint8_t mode,bool bStartReceive = true);
+	void switchMode(uint8_t mode, bool bStartReceive = true);
 	uint8_t getAddressType(uint8_t manuId);
-  //void coord2payload_absolut(float lat, float lon, uint8_t *buf);
+	// void coord2payload_absolut(float lat, float lon, uint8_t *buf);
 
 	bool isNeighbor(MacAddr addr);
-	//int16_t checkLegacyPaket(void *legacy_pkt, ufo_t *this_aircraft, ufo_t *fop);
+	// int16_t checkLegacyPaket(void *legacy_pkt, ufo_t *this_aircraft, ufo_t *fop);
 	uint8_t _actMode = 0;
-	//bool _fskMode;
+	// bool _fskMode;
 	LoRaClass radio;
 
-	void sendUdpData(const uint8_t *buffer,int len);
+	void sendUdpData(const uint8_t *buffer, int len);
 	uint32_t long legacy_next_tx = 0;
-	uint8_t LegacyBuffer [26];
+	uint8_t LegacyBuffer[26];
 	uint32_t _ppsMillis = 0;
 	uint8_t _ppsCount = 0;
 	eLoraRegion eLoraRegion = NONE;
@@ -266,28 +262,31 @@ private:
 	float actflarmFreq = 0.0;
 
 public:
-
-  bool doForward = true;
-  float lat = 0;
-  float lon = 0;
-  float geoidAlt = 0;
-  bool bPPS = false;
-	bool bHasGPS = false;
-	uRfMode _RfMode;	
+	bool doForward = true;
+	float lat = 51.8;
+	float lon = 0.134;
+	float geoidAlt = 100;
+	bool bPPS = true;
+	bool bHasGPS = true;
+	uRfMode _RfMode;
 	uint16_t txFntCount = 0;
 	uint16_t rxFntCount = 0;
 	uint16_t txLegCount = 0;
 	uint16_t rxLegCount = 0;
 
-	FanetMac() : myTimer(MAC_SLOT_MS, stateWrapper), myAddr(_myAddr) { }
-	~FanetMac() { }
+	FanetMac() : myTimer(MAC_SLOT_MS, stateWrapper), myAddr(_myAddr) {}
+	~FanetMac() {}
 
-	bool begin(int8_t sck, int8_t miso, int8_t mosi, int8_t ss,int8_t reset, int8_t dio0,int8_t gpio,Fapp &app,long frequency,uint8_t level,uint8_t radioChip);
+	bool begin(int8_t sck, int8_t miso, int8_t mosi, int8_t ss, int8_t reset, int8_t dio0, int8_t gpio, Fapp &app, long frequency, uint8_t level, uint8_t radioChip);
 	void end();
-	void handle() { radio.run(); myTimer.Update();  }
+	void handle()
+	{
+		radio.run();
+		myTimer.Update();
+	}
 
 	bool txQueueDepleted(void) { return (tx_fifo.size() == 0); }
-	bool txQueueHasFreeSlots(void){ return (tx_fifo.size() < MAC_FIFO_SIZE); }
+	bool txQueueHasFreeSlots(void) { return (tx_fifo.size() < MAC_FIFO_SIZE); }
 	int transmit(Frame *frm) { return tx_fifo.add(frm); }
 
 	uint16_t numNeighbors(void) { return neighbors.size(); }
@@ -303,7 +302,7 @@ public:
 	// for example when you want to match your mode-S address so no two planes are seen at the same location
 	bool setAddr(uint32_t addr);
 	bool eraseAddr(void);
-	MacAddr readAddr(bool getHwAddr=false);	
+	MacAddr readAddr(bool getHwAddr = false);
 };
 
 extern FanetMac fmac;
