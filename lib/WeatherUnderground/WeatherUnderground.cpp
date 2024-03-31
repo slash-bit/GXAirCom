@@ -62,6 +62,7 @@ bool WeatherUnderground::getData(String ID, String KEY, wData *data)
       if (length >= 0)
       {
         payload = http.responseBody();
+        log_i("Successfully obtained weather from WU");
       }
       else
       {
