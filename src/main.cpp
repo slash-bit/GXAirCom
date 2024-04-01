@@ -4892,7 +4892,8 @@ void taskStandard(void *pvParameters)
 #ifdef AIRMODULE
   if (PinGPSRX >= 0)
   {
-    NMeaSerial.begin(setting.gps.Baud, SERIAL_8N1, PinGPSRX, PinGPSTX, false);
+    // NMeaSerial.begin(setting.gps.Baud, SERIAL_8N1, PinGPSRX, PinGPSTX, false);
+    NMeaSerial.begin(9600, SERIAL_8N1, 9, 8, false);
     log_i("GPS Baud=%d,8N1,RX=%d,TX=%d", setting.gps.Baud, PinGPSRX, PinGPSTX);
     // clear serial buffer
     while (NMeaSerial.available())
@@ -4903,10 +4904,24 @@ void taskStandard(void *pvParameters)
   {
     // only on new boards we have an pps-pin
     log_i("setup PPS-Pin for GPS");
+    Serial.println("setup PPS-Pin for GPS");
     pinMode(PinPPS, INPUT);
     // attachInterrupt(digitalPinToInterrupt(PinPPS), ppsHandler, FALLING);
     attachInterrupt(digitalPinToInterrupt(PinPPS), ppsHandler, RISING);
   }
+  delay(10000);
+  Serial.println("GPS setup");
+  Serial.println("Initialising L76K GPS Chip....");
+  // Initialize the L76K Chip, use GPS + GLONASS + BEIDOU
+  NMeaSerial.write("$PCAS04,7*1E\r\n");
+  delay(250);
+  // only ask for RMC and GGA
+  NMeaSerial.write("$PCAS03,1,0,0,0,1,0,0,0,0,0,,,0,0*02\r\n");
+  delay(250);
+  // Switch to Vehicle Mode, since SoftRF enables Aviation < 2g
+  NMeaSerial.write("$PCAS11,3*1E\r\n");
+  delay(250);
+  Serial.println("Complete-4");
 #ifdef GXTEST
   status.gps.bExtGps = true;
   fanet.setGPS(true);
