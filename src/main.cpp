@@ -39,7 +39,7 @@
 
 XPowersLibInterface *PMU = NULL;
 
-// #define GXTEST
+#define GXTEST
 // #define FLARMTEST
 #define SerialMon Serial
 #define TINY_GSM_RX_BUFFER 1024
