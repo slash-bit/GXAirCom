@@ -2,8 +2,8 @@
 #ifndef LORA_H
 #define LORA_H
 
-// #define RADIOLIB_DEBUG
-// #define RADIOLIB_VERBOSE
+#define RADIOLIB_DEBUG
+#define RADIOLIB_VERBOSE
 
 #include <Arduino.h>
 #include <SPI.h>
