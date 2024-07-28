@@ -1,5 +1,5 @@
 #include <WeatherUnderground.h>
-
+// #include <pgmspace.h>
 
 WeatherUnderground::WeatherUnderground(){
     client = NULL;
@@ -8,7 +8,7 @@ WeatherUnderground::WeatherUnderground(){
 }
 
 WeatherUnderground::~WeatherUnderground(){
-  if (MyClient != NULL){
+  if (MyClient != NULL){ 
     delete MyClient;
   }
 }
@@ -35,7 +35,7 @@ bool WeatherUnderground::getData(String ID,String KEY,wData *data){ //get Data f
           KEY.c_str()
           );
   String payload = ""; //http.getString();
-  uint16_t serverPort = 80;
+  uint16_t serverPort = 443;
   if (client == NULL){    
     #ifdef SSLCONNECTION
     MyClient = new WiFiClientSecure();
@@ -81,7 +81,8 @@ bool WeatherUnderground::getData(String ID,String KEY,wData *data){ //get Data f
   }
   if (doc["observations"][0]["lat"]) data->lat = doc["observations"][0]["lat"].as<float>();
   if (doc["observations"][0]["lon"]) data->lon = doc["observations"][0]["lon"].as<float>();
-  if (doc["observations"][0]["metric"]["elev"]) data->height = doc["observations"][0]["metric"]["elev"].as<float>();  
+  if (doc["observations"][0]["metric"]["elev"]) data->height = doc["observations"][0]["metric"]["elev"].as<float>();
+  data->solarRadiation = doc["observations"][0]["solarRadiation"].as<float>();  
   if (doc["observations"][0]["metric"]["temp"]){
     data->bTemp = true;
     data->temp = doc["observations"][0]["metric"]["temp"].as<float>();

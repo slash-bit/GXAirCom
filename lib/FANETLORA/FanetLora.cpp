@@ -1193,12 +1193,12 @@ void FanetLora::writeMsgType2(String name){
 
 void FanetLora::writeMsgType3(uint32_t devId,String msg){
     if (msg.length() > 0){
-        //log_i("sending fanet-msg:%s",msg.c_str());
+        log_i("sending fanet-msg:%s",msg.c_str());
         Frame *frm = new Frame(fmac.myAddr);
         frm->type = FRM_TYPE_MESSAGE;
         frm->dest = getMacFromDevId(devId);
         frm->payload_length = serialize_msg(msg,frm->payload);
-        //log_i("sending fanet-msg:%s length=%d",msg.c_str(),frm->payload_length);
+        log_i("sending fanet-msg:%s To:%d length=%d",msg.c_str(),frm->dest,frm->payload_length);
         frm2txBuffer(frm);
     }
 }

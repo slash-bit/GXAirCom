@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <HardwareSerial.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 //#include <esp_wifi.h>
 #include <WiFiClient.h>
 #include <SPI.h>
@@ -33,9 +34,11 @@
 #include <AceButton.h>
 #include <ArduinoJson.h>
 #include "../lib/GxMqtt/GxMqtt.h"
-
+#include <UniversalTelegramBot.h>
 #include "XPowersLib.h"
 #include "TimeDefs.h"
+#define TELEGRAM
+#define BOT_TOKEN "1578535248:AAE2xkOCZujNjx4gey6sMjX0o80Xp9hLYg8"
 
 XPowersLibInterface *PMU = NULL;
 
@@ -208,8 +211,12 @@ SemaphoreHandle_t RxBleQueue = nullptr;
 uint32_t psRamSize = 0;
 
 uint32_t fanetDstId = 0;
-
-
+#ifdef TELEGRAM
+WiFiClientSecure secured_client;
+UniversalTelegramBot bot(BOT_TOKEN, secured_client);
+const unsigned long BOT_MTBS = 1000; // mean time between scan messages
+unsigned long bot_lasttime; // last time messages' scan has been done
+#endif
 //PIN-Definition
 int8_t PinPMU_Irq   =  35;
 
@@ -359,6 +366,9 @@ void taskStandard(void *pvParameters);
 void taskBackGround(void *pvParameters);
 #ifdef BLUETOOTH
 void taskBluetooth(void *pvParameters);
+#endif
+#ifdef TELEGRAM
+void telegramTask();
 #endif
 void taskMemory(void *pvParameters);
 void setupWifi();
@@ -849,7 +859,32 @@ void checkFlyingState(uint32_t tAct){
   }
 
 }
-
+#ifdef TELEGRAM
+void handleNewMessages(int numNewMessages)
+{
+  for (int i = 0; i < numNewMessages; i++)
+  {
+    // bot.sendMessage(bot.messages[i].chat_id, bot.messages[i].text, "");
+    sendFanetData = 3;
+    //if message begins with "FANET" --> send Fanet-Data
+    if (bot.messages[i].text.substring(0,6) == "FANET:") { //if Telegram message starts with "FANET:" use 6 characters after as destination address
+      // sendFanetData = 3;
+      fanet.writeMsgType3(0,bot.messages[i].text.substring(6));
+      }
+    else if (bot.messages[i].text.substring(0,13) == "Airspace open"){ //broadcast Notam message to Fanet
+      fanet.writeMsgType3(0,"NOTAM DEACTIVATE:DGA1");
+    }
+    else if (bot.messages[i].text.substring(0,15) == "Airspace closed"){ //broadcast Notam message to Fanet
+      fanet.writeMsgType3(0,"NOTAM ACTIVATE:DGA1");
+    }
+    else
+    {//ignore, do nothing
+      continue;
+    }
+    // fanet.writeMsgType3(0,bot.messages[i].text);
+  }
+}
+#endif
 #ifdef GSMODULE
 uint32_t calcSleepTime(){
   uint32_t iRet = 0;
@@ -1685,6 +1720,8 @@ void setup() {
   log_i("Total heap: %d", ESP.getHeapSize());
   log_i("Free heap: %d", ESP.getFreeHeap());
   log_i("size of long %d",sizeof(long));
+  secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT); // Add root certificate for api.telegram.org
+
   //function takes the following frequencies as valid values:
   //  240, 160, 80    <<< For all XTAL types
   //  40, 20, 10      <<< For 40MHz XTAL
@@ -2887,11 +2924,12 @@ void getRTC(){
     return;  
   }  
 }
-
+#endif
 
 void taskWeather(void *pvParameters){
   static uint32_t tUploadData; //first sending is in Sending-intervall to have steady-values
   static uint32_t tSendData; //first sending is in FANET-Sending-intervall to have steady-values
+  static uint32_t tCheckTele; //first setting timer for checking Telegram 
   static uint32_t tLastWindSpeed; //
   static uint32_t tWindOk;
   static uint32_t tGetRTCTime;
@@ -2910,7 +2948,7 @@ void taskWeather(void *pvParameters){
   if (!weather.begin(pI2cZero,setting,PinOneWire,PinWindDir,PinWindSpeed,PinRainGauge)){
   
   }
-  if ((setting.WUUpload.enable) && (!setting.wd.mode.bits.enable)){
+  if (setting.WUUpload.enable){//&& (!setting.wd.mode.bits.enable)){
     status.bWUBroadCast = true;
     log_i("wu broadcast enabled");
   }
@@ -2923,6 +2961,7 @@ void taskWeather(void *pvParameters){
   TickType_t xLastWakeTime = xTaskGetTickCount (); //get actual tick-count
   tUploadData = millis();
   tSendData = millis();
+  tCheckTele = millis();
   tLastWindSpeed = millis();
   tWindOk = millis();
   status.weather.error.value = 0;
@@ -3012,7 +3051,7 @@ void taskWeather(void *pvParameters){
         status.weather.WindSpeed = avg[0].WindSpeed; //we use the Fanet-Weather-Speed
         status.weather.WindGust = avg[0].WindGust; //we use the Fanet-Weather-Gust
       }
-      if (timeOver(tAct,tUploadData,setting.wd.WUUploadIntervall)){
+      if (timeOver(tAct,tUploadData,400000)){
         tUploadData = tAct;
         if ((status.bInternetConnected) && (status.bTimeOk) && (status.weather.error.value == 0)){
           if (setting.WUUpload.enable){
@@ -3036,7 +3075,7 @@ void taskWeather(void *pvParameters){
             wuData.bRain = setting.wd.mode.bits.rainSensor;
             wuData.rain1h = wData.rain1h ;
             wuData.raindaily = wData.rain1d;
-            //log_i("wuData:wDir=%f;wSpeed=%f,gust=%f,temp=%f,h=%f,p=%f",wuData.winddir,wuData.windspeed,wuData.windgust,wuData.temp,wuData.humidity,wuData.pressure);
+            log_i("wuData:wDir=%f;wSpeed=%f,gust=%f,temp=%f,h=%f,p=%f",wuData.winddir,wuData.windspeed,wuData.windgust,wuData.temp,wuData.humidity,wuData.pressure);
             wu.sendData(setting.WUUpload.ID,setting.WUUpload.KEY,&wuData);
           }
           if (setting.WindyUpload.enable){
@@ -3115,10 +3154,18 @@ void taskWeather(void *pvParameters){
         tSendData = tAct;
       }
     }
+    #ifdef TELEGRAM
+    if (timeOver(tAct,tCheckTele,10000)){
+      tCheckTele = tAct;
+      if (status.bInternetConnected){
+        telegramTask();
+      }
+    }
     if (status.bWUBroadCast){
       //station should broadcast WU-Data over Fanet
-      if (timeOver(tAct,tUploadData,setting.wd.WUUploadIntervall)){ //get Data from WU        
+      if (timeOver(tAct,tUploadData,setting.wd.WUUploadIntervall)){ //get Data from WU every 2 minutes      
         tUploadData = tAct;
+        log_i("Internet Status=%d",status.bInternetConnected);
         if (status.bInternetConnected){
           WeatherUnderground::wData wuData;
           WeatherUnderground wu;
@@ -3152,16 +3199,18 @@ void taskWeather(void *pvParameters){
             fanetWeatherData.bHumidity = true;
             fanetWeatherData.bBaro = true;
             fanetWeatherData.temp = wuData.temp;
-            fanetWeatherData.Humidity = wuData.humidity;
+            // fanetWeatherData.Humidity = wuData.humidity;
             fanetWeatherData.Baro = wuData.pressure;      
             fanetWeatherData.bStateOfCharge = true;  
-            log_i("winddir=%.1f speed=%.1f gust=%.1f temp=%.1f hum=%.1f press=%.1f",fanetWeatherData.wHeading,fanetWeatherData.wSpeed,fanetWeatherData.wGust,fanetWeatherData.temp,fanetWeatherData.Humidity,fanetWeatherData.Baro);          
+            fanetWeatherData.solarRadiation = wuData.solarRadiation;
+            log_i("winddir=%.1f speed=%.1f gust=%.1f temp=%.1f hum=%.1f press=%.1f solar=%.0f",fanetWeatherData.wHeading,fanetWeatherData.wSpeed,fanetWeatherData.wGust,fanetWeatherData.temp,fanetWeatherData.Humidity,fanetWeatherData.Baro, fanetWeatherData.solarRadiation);          
+            sendWeatherData = true;
           }else{
             log_e("no Data from WU");
           }
         }
       }
-      if (timeOver(tAct,tSendData,setting.wd.FanetUploadInterval)){
+      if (timeOver(tAct,tSendData,60000)){
         tSendData = tAct;
         if (bDataOk){
           fanetWeatherData.Charge = status.battery.percent;
@@ -3303,6 +3352,23 @@ void loop() {
   //log_i("Resetting WDT...");
   //esp_task_wdt_reset();  
   //delay(10000);
+}
+void telegramTask()
+{
+  log_i("checking Telegram");
+  if (millis() - bot_lasttime > BOT_MTBS)
+  {
+    int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+
+    while (numNewMessages)
+    {
+      log_i("got telegram message");
+      handleNewMessages(numNewMessages);
+      numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+    }
+
+    bot_lasttime = millis();
+  }
 }
 
 void taskMemory(void *pvParameters) {
@@ -4622,7 +4688,7 @@ void taskStandard(void *pvParameters){
       sendFanetData = 0;
     }
     if (sendWeatherData){ //we have to send weatherdata
-      //log_i("sending weatherdata %d,%d,%d,%d,%d",fanetWeatherData.bTemp,fanetWeatherData.bHumidity,fanetWeatherData.bStateOfCharge,fanetWeatherData.bWind,fanetWeatherData.bBaro);
+      log_i("sending weatherdata %d,%d,%d,%d,%d",fanetWeatherData.bTemp,fanetWeatherData.bHumidity,fanetWeatherData.bStateOfCharge,fanetWeatherData.bWind,fanetWeatherData.bBaro);
       fanet.writeMsgType4(&fanetWeatherData);
       if (setting.OGNLiveTracking.bits.sendWeather) {
         Ogn::weatherData wData;

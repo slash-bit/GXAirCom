@@ -35,6 +35,7 @@ public:
     float winddir;
     float windspeed;
     float windgust;
+    float solarRadiation;
     bool bHum = false;
     float humidity;
     bool bTemp = false;

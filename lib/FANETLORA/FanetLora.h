@@ -236,6 +236,7 @@ public:
     float Baro;
     bool bStateOfCharge;
     float Charge; //+1byte lower 4 bits: 0x00 = 0%, 0x01 = 6.666%, .. 0x0F = 100%
+    float solarRadiation;
   } weatherData;
 
   FanetLora(); //constructor
